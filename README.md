@@ -222,6 +222,15 @@ GitHub 匿名额度不够时再提供 Token。Token 不要写进配置文件或�
 GITHUB_TOKEN=*** node dist/cli.js run github --set mode=user-repos --set user=hsutter --set limit=20
 ```
 
+### Web 界面（下任务、看过程、看结果）
+
+```bash
+npm run web          # 默认 http://127.0.0.1:3210
+npm run web -- 3400  # 自定义端口
+```
+
+三栏界面：左侧选插件并按其 `configSchema` 动态生成表单，填完点「运行」即下任务；中间是运行列表，进行中的任务带实时日志行数；右侧点击任意运行查看彩色实时日志流和结果表格（前 500 条，完整结果仍是 `items.json`）。每次运行还会在输出目录写 `manifest.json`（配置、统计、起止时间，token 已脱敏）。服务只监听 127.0.0.1，不暴露到网络。
+
 ### 在代码里调用
 
 构建之后：

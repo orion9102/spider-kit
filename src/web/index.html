@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>spider-kit</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#262b36; --fg:#d7dce5; --dim:#7b8496; --acc:#4f8cff; --ok:#3fb950; --warn:#d29922; --err:#f85149; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:13px/1.5 ui-monospace,Menlo,Consolas,monospace; display:flex; height:100vh; }
+  h1 { font-size:14px; margin:0 0 8px; color:var(--acc); }
+  h2 { font-size:12px; margin:0 0 6px; color:var(--dim); text-transform:uppercase; letter-spacing:.08em; }
+  .col { padding:14px; overflow-y:auto; }
+  #left { width:260px; border-right:1px solid var(--line); flex-shrink:0; }
+  #mid { width:320px; border-right:1px solid var(--line); flex-shrink:0; }
+  #right { flex:1; }
+  .plugin { padding:8px 10px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; cursor:pointer; }
+  .plugin:hover, .plugin.sel { border-color:var(--acc); }
+  .plugin .desc { color:var(--dim); font-size:11px; }
+  .field { margin:8px 0 4px; }
+  .field label { display:block; color:var(--dim); font-size:11px; margin-bottom:2px; }
+  .field input, .field textarea { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:5px 7px; font:inherit; }
+  .field .req { color:var(--err); }
+  .field .hint { color:var(--dim); font-size:10px; }
+  button { background:var(--acc); color:#fff; border:0; border-radius:6px; padding:7px 14px; font:inherit; cursor:pointer; width:100%; margin-top:10px; }
+  button:disabled { background:var(--line); color:var(--dim); cursor:not-allowed; }
+  .run { padding:8px 10px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; cursor:pointer; }
+  .run:hover, .run.sel { border-color:var(--acc); }
+  .run .meta { color:var(--dim); font-size:11px; }
+  .badge { display:inline-block; padding:1px 7px; border-radius:9px; font-size:10px; }
+  .badge.running { background:#1f2a3d; color:var(--acc); }
+  .badge.done { background:#12261a; color:var(--ok); }
+  .badge.failed { background:#331a1a; color:var(--err); }
+  #logs { background:#0b0d11; border:1px solid var(--line); border-radius:6px; padding:10px; height:45%; overflow-y:auto; white-space:pre-wrap; word-break:break-all; font-size:12px; }
+  #logs .info { color:var(--fg); } #logs .warning { color:var(--warn); } #logs .error { color:var(--err); } #logs .debug { color:var(--dim); }
+  #logs .ts { color:var(--dim); }
+  #results { margin-top:10px; border:1px solid var(--line); border-radius:6px; overflow:auto; height:calc(55% - 30px); }
+  table { border-collapse:collapse; width:100%; font-size:11px; }
+  th, td { border-bottom:1px solid var(--line); padding:4px 8px; text-align:left; vertical-align:top; }
+  th { color:var(--dim); position:sticky; top:0; background:var(--panel); }
+  #runStats { color:var(--dim); font-size:11px; margin:6px 0; }
+  .empty { color:var(--dim); padding:20px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="col" id="left">
+  <h1>spider-kit</h1>
+  <h2>插件</h2>
+  <div id="plugins"></div>
+  <h2 style="margin-top:16px">发起运行</h2>
+  <form id="runForm"></form>
+  <button id="submit" disabled>运行</button>
+</div>
+<div class="col" id="mid">
+  <h2>运行</h2>
+  <div id="runs"></div>
+</div>
+<div class="col" id="right">
+  <h2 id="detailTitle">详情</h2>
+  <div id="runStats"></div>
+  <div id="logs"></div>
+  <div id="results"></div>
+</div>
+<script>
+'use strict';
+let plugins = [], selectedPlugin = null, selectedRun = null, pollTimer = null;
+
+const $ = (id) => document.getElementById(id);
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok && res.status !== 404) throw new Error(path + ' -> ' + res.status);
+  return res.json();
+}
+
+async function loadPlugins() {
+  plugins = await api('/api/plugins');
+  const box = $('plugins'); box.innerHTML = '';
+  for (const p of plugins) {
+    const el = document.createElement('div');
+    el.className = 'plugin';
+    el.innerHTML = '<div><b>' + p.name + '</b>@' + p.version + '</div><div class="desc">' + (p.description || '') + '</div>';
+    el.onclick = () => selectPlugin(p.name);
+    box.appendChild(el);
+  }
+}
+
+function selectPlugin(name) {
+  selectedPlugin = plugins.find((p) => p.name === name);
+  document.querySelectorAll('.plugin').forEach((el, i) => el.classList.toggle('sel', plugins[i].name === name));
+  const form = $('runForm'); form.innerHTML = '';
+  for (const f of selectedPlugin.fields) {
+    const div = document.createElement('div');
+    div.className = 'field';
+    const req = f.required ? '<span class="req">*</span> ' : '';
+    div.innerHTML = '<label>' + req + f.name + ' <span class="hint">' + (f.type) + (f.default !== undefined && f.default !== null ? ' 默认 ' + JSON.stringify(f.default) : '') + '</span></label>';
+    const input = document.createElement('input');
+    input.name = f.name;
+    input.placeholder = f.description || '';
+    if (f.default !== undefined && f.default !== null) input.placeholder += ' (默认 ' + JSON.stringify(f.default) + ')';
+    input.dataset.type = f.type;
+    div.appendChild(input);
+    form.appendChild(div);
+  }
+  $('submit').disabled = false;
+}
+
+function parseInput(v, type) {
+  if (v === '') return undefined;
+  if (type === 'number') { const n = Number(v); if (Number.isNaN(n)) throw new Error(v + ' 不是数字'); return n; }
+  if (type === 'boolean') { if (!/^(true|false)$/.test(v)) throw new Error(v + ' 不是布尔'); return v === 'true'; }
+  if (type === 'array' || type === 'object') { const parsed = JSON.parse(v); if (type === 'array' && !Array.isArray(parsed)) throw new Error('需要 JSON 数组'); return parsed; }
+  return v;
+}
+
+$('submit').onclick = async () => {
+  if (!selectedPlugin) return;
+  const config = {};
+  try {
+    for (const input of $('runForm').querySelectorAll('input')) {
+      const v = parseInput(input.value, input.dataset.type);
+      if (v !== undefined) config[input.name] = v;
+    }
+  } catch (e) { alert('配置解析失败: ' + e.message); return; }
+  const missing = selectedPlugin.fields.filter((f) => f.required && config[f.name] === undefined);
+  if (missing.length) { alert('缺少必填: ' + missing.map((f) => f.name).join(', ')); return; }
+  await api('/api/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ plugin: selectedPlugin.name, config }) });
+  pollSoon();
+};
+
+async function loadRuns() {
+  const list = await api('/api/runs');
+  const box = $('runs'); box.innerHTML = '';
+  if (!list.length) { box.innerHTML = '<div class="empty">还没有运行</div>'; }
+  for (const r of list) {
+    const el = document.createElement('div');
+    el.className = 'run' + (selectedRun === r.runId ? ' sel' : '');
+    el.innerHTML = '<div><span class="badge ' + r.status + '">' + r.status + '</span> <b>' + r.plugin + '</b></div>' +
+      '<div class="meta">' + new Date(r.startedAt).toLocaleTimeString() + (r.status === 'done' ? ' · ' + r.itemCount + ' 条' : '') + (r.status === 'running' ? ' · ' + r.lines + ' 行日志' : '') + '</div>';
+    el.onclick = () => { selectedRun = r.runId; loadRuns(); loadDetail(); };
+    box.appendChild(el);
+  }
+}
+
+let lastLogTs = '';
+async function loadDetail() {
+  if (!selectedRun) return;
+  const rec = await api('/api/runs/' + selectedRun);
+  if (rec.error) { $('detailTitle').textContent = '详情'; return; }
+  $('detailTitle').textContent = rec.plugin + ' · ' + rec.runId.slice(0, 40);
+  const s = rec.stats;
+  $('runStats').textContent = rec.status === 'running' ? '运行中…' :
+    (s ? '请求 ' + s.requestsTotal + ' · 失败 ' + s.requestsFailed + ' · 重试 ' + s.retryCount + ' · ' + (s.durationMs / 1000).toFixed(1) + 's · ' + (rec.itemCount ?? 0) + ' 条' : rec.error || '');
+  const logs = $('logs');
+  logs.innerHTML = rec.lines.map((l) => '<span class="ts">' + new Date(l.ts).toLocaleTimeString() + '</span> <span class="' + l.level + '">' + escapeHtml(l.message) + '</span>').join('\n') || '…';
+  logs.scrollTop = logs.scrollHeight;
+  if (rec.status === 'done') loadResults(); else $('results').innerHTML = '';
+}
+
+async function loadResults() {
+  const data = await api('/api/results/' + selectedRun);
+  if (data.error) { $('results').innerHTML = '<div class="empty">' + data.error + '</div>'; return; }
+  if (!data.items.length) { $('results').innerHTML = '<div class="empty">0 条</div>'; return; }
+  const cols = [...new Set(data.items.flatMap((i) => Object.keys(i)))].slice(0, 8);
+  let html = '<table><thead><tr>' + cols.map((c) => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
+  for (const item of data.items) {
+    html += '<tr>' + cols.map((c) => '<td>' + escapeHtml(String(item[c] ?? '')) + '</td>').join('') + '</tr>';
+  }
+  html += '</tbody></table>';
+  if (data.total > 500) html += '<div class="empty">仅显示前 500 / ' + data.total + ' 条，完整结果见 items.json</div>';
+  $('results').innerHTML = html;
+}
+
+function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function pollSoon() { loadRuns(); if (selectedRun) loadDetail(); }
+loadPlugins().then(loadRuns);
+pollTimer = setInterval(pollSoon, 2000);
+</script>
+</body>
+</html>

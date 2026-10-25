@@ -7,13 +7,15 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "spider-kit": "dist/cli.js"
+    "spider-kit": "dist/cli.js",
+    "spider-kit-web": "dist/web.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node -e \"const{mkdirSync,cpSync}=require('fs');mkdirSync('dist/web',{recursive:true});cpSync('src/web','dist/web',{recursive:true})\"",
     "cli": "node dist/cli.js",
     "test": "npm run build && node --test tests/",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "web": "node dist/web.js"
   },
   "engines": {
     "node": ">=18.17"
