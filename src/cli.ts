@@ -82,6 +82,8 @@ program
         console.log(`✔ 完成: ${result.plugin} 共 ${result.itemCount} 条结果`);
         console.log(`  JSON : ${result.jsonPath}`);
         console.log(`  JSONL: ${result.jsonlPath}`);
+        const s = result.stats;
+        console.log(`  统计 : 请求 ${s.requestsTotal} (失败 ${s.requestsFailed}, 重试 ${s.retryCount}), 耗时 ${(s.durationMs / 1000).toFixed(1)}s`);
     });
 
 program.parseAsync().catch((err: Error) => {

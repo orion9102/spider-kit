@@ -6,12 +6,18 @@
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": { "spider-kit": "dist/cli.js" },
+  "bin": {
+    "spider-kit": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "cli": "node dist/cli.js"
+    "cli": "node dist/cli.js",
+    "test": "npm run build && node --test tests/",
+    "smoke": "node scripts/smoke.mjs"
   },
-  "engines": { "node": ">=18.17" },
+  "engines": {
+    "node": ">=18.17"
+  },
   "dependencies": {
     "cheerio": "^1.0.0",
     "commander": "^13.1.0",

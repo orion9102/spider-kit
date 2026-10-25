@@ -369,6 +369,15 @@ npm i playwright && npx playwright install chromium
 
 这一步不是当前版本的依赖。
 
+## 测试与冒烟
+
+```bash
+npm test          # 构建并跑单元测试（node:test，无额外依赖）
+npm run smoke     # 本地起临时服务，端到端验证三个内置插件
+```
+
+单元测试覆盖配置合并、必填校验、插件形状检查、导出文件和翻页停止规则。冒烟测试在本地回环地址起一个临时 HTTP 服务，依次验证 static-site 抽取、api-json 提取与空页停止、github 缺参拦截，全程不出网。两者都通过后，`run` 命令结束时会打印请求总数、失败数、重试数和耗时。
+
 ## 合规
 
 - `static-site` 默认遵守 robots.txt，默认每分钟不超过 60 个请求。
