@@ -1,0 +1,24 @@
+{
+  "name": "spider-kit",
+  "version": "0.1.0",
+  "description": "Plugin-based universal web crawler framework built on Crawlee (插件化通用爬虫框架)",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": { "spider-kit": "dist/cli.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "cli": "node dist/cli.js"
+  },
+  "engines": { "node": ">=18.17" },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "commander": "^13.1.0",
+    "crawlee": "^3.13.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.8.2"
+  }
+}

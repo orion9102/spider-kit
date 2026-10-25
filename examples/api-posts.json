@@ -1,0 +1,9 @@
+{
+  "plugin": "api-json",
+  "config": {
+    "startUrls": ["https://jsonplaceholder.typicode.com/posts"],
+    "pageParam": "_page",
+    "startPage": 1,
+    "maxPages": 2
+  }
+}

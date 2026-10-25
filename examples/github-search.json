@@ -1,0 +1,8 @@
+{
+  "plugin": "github",
+  "config": {
+    "mode": "search-repos",
+    "query": "web crawler language:typescript",
+    "limit": 10
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "plugin": "static-site",
+  "config": {
+    "startUrls": ["https://quotes.toscrape.com/"],
+    "itemSelector": ".quote",
+    "fields": { "text": ".text", "author": ".author", "firstTag": ".tag" },
+    "maxRequests": 3
+  }
+}

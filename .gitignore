@@ -1,0 +1,5 @@
+node_modules/
+dist/
+storage/
+output/
+.DS_Store
