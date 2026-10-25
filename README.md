@@ -378,11 +378,7 @@ npm i playwright && npx playwright install chromium
 
 ## 路线图
 
-- [ ] x.com 插件（Playwright + 登录态）
-- [ ] 小红书插件
-- [ ] 代理池与 UA 轮换
-- [ ] 定时运行和增量抓取
-- [ ] Web 管理界面
+目标和分阶段计划在 [ROADMAP.md](ROADMAP.md)。顺序是：先把 v0.1 用测试钉住，再做续爬与失败记录，然后才加浏览器、正文抽取、增量、分布式和专项站点插件。
 
 ## License
 
