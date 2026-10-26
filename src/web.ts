@@ -13,7 +13,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAllPlugins, findPlugin } from './core/registry.js';
-import { runPlugin, purgeStorage } from './core/engine.js';
+import { runPlugin } from './core/engine.js';
 import { runs } from './core/runs.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -40,7 +40,9 @@ function launchRun(pluginName: string, config: Record<string, unknown>, outDir?:
         try {
             const plugin = await findPlugin(pluginName);
             if (!plugin) throw new Error(`未找到插件 "${pluginName}"`);
-            await purgeStorage();
+            // 注意：常驻进程不能整体清 storage——Crawlee 内存句柄仍指向那些文件，
+            // 删掉后下一次运行会报 SDK_SESSION_POOL_STATE.json 丢失。
+            // 隔离由 runId 唯一性保证（时间戳+pid+随机后缀），无需清理。
             await runPlugin(plugin, config, outDir ? { outDir } : {});
         } catch (err) {
             // 注册表之外的失败（如 purgeStorage 抛错）也要留痕：打印到容器日志
