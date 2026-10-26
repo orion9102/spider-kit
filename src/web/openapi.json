@@ -187,7 +187,9 @@
           "type": { "type": "string", "enum": ["string", "number", "boolean", "array", "object"] },
           "description": { "type": "string" },
           "required": { "type": "boolean" },
-          "default": {}
+          "default": {},
+          "enum": { "type": "array", "description": "闭合取值。界面渲染为下拉框。" },
+          "suggestions": { "type": "array", "description": "推荐取值。界面渲染为可输入下拉，仍允许手填。" }
         }
       },
       "CreateRunRequest": {

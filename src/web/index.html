@@ -63,7 +63,11 @@
     border:1px solid var(--line); border-radius:8px; padding:7px 10px; font:inherit; outline:none;
     transition:border-color .15s;
   }
-  .field input:focus { border-color:var(--peach); background:#fff; }
+  .field input:focus, .field select:focus { border-color:var(--peach); background:#fff; }
+  .field select {
+    width:100%; background:var(--cream); color:var(--fg);
+    border:1px solid var(--line); border-radius:8px; padding:7px 10px; font:inherit; outline:none;
+  }
   button {
     background:linear-gradient(135deg,var(--peach) 0%,var(--peach-deep) 100%);
     color:#fff; border:0; border-radius:20px; padding:9px 16px; font:inherit; font-weight:600;
@@ -148,6 +152,56 @@ async function loadPlugins() {
   }
 }
 
+function fieldChoices(f) {
+  if (Array.isArray(f.enum) && f.enum.length) return { kind: 'enum', values: f.enum };
+  if (Array.isArray(f.suggestions) && f.suggestions.length) return { kind: 'suggest', values: f.suggestions };
+  return { kind: 'input', values: [] };
+}
+
+function optionValue(v) {
+  return typeof v === 'string' ? v : JSON.stringify(v);
+}
+
+function makeSelect(f) {
+  const select = document.createElement('select');
+  select.name = f.name;
+  select.dataset.type = f.type;
+  if (!f.required) {
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '不填，用默认';
+    select.appendChild(blank);
+  }
+  for (const v of f.enum) {
+    const opt = document.createElement('option');
+    opt.value = optionValue(v);
+    opt.textContent = optionValue(v);
+    if (f.default !== undefined && Object.is(f.default, v)) opt.selected = true;
+    select.appendChild(opt);
+  }
+  return select;
+}
+
+function makeInput(f, choice) {
+  const input = document.createElement('input');
+  input.name = f.name;
+  input.placeholder = f.description || '';
+  input.dataset.type = f.type;
+  if (choice.kind !== 'suggest') return input;
+  const listId = 'suggest-' + f.name;
+  input.setAttribute('list', listId);
+  const wrap = document.createDocumentFragment();
+  const list = document.createElement('datalist');
+  list.id = listId;
+  for (const v of choice.values) {
+    const opt = document.createElement('option');
+    opt.value = optionValue(v);
+    list.appendChild(opt);
+  }
+  wrap.append(input, list);
+  return wrap;
+}
+
 function selectPlugin(name) {
   selectedPlugin = plugins.find((p) => p.name === name);
   document.querySelectorAll('.plugin').forEach((el, i) => el.classList.toggle('sel', plugins[i].name === name));
@@ -158,12 +212,10 @@ function selectPlugin(name) {
     const req = f.required ? '<span class="req">*</span> ' : '';
     let def = '';
     if (f.default !== undefined && f.default !== null) def = ' 默认 ' + JSON.stringify(f.default);
-    div.innerHTML = '<label>' + req + f.name + ' <span class="hint">' + f.type + def + '</span></label>';
-    const input = document.createElement('input');
-    input.name = f.name;
-    input.placeholder = f.description || '';
-    input.dataset.type = f.type;
-    div.appendChild(input);
+    const choice = fieldChoices(f);
+    const hint = f.type + (choice.kind === 'enum' ? ' 下拉' : choice.kind === 'suggest' ? ' 可选可填' : '') + def;
+    div.innerHTML = '<label>' + req + f.name + ' <span class="hint">' + hint + '</span></label>';
+    div.appendChild(choice.kind === 'enum' ? makeSelect(f) : makeInput(f, choice));
     form.appendChild(div);
   }
   $('submit').disabled = false;
@@ -181,7 +233,7 @@ $('submit').onclick = async () => {
   if (!selectedPlugin) return;
   const config = {};
   try {
-    for (const input of $('runForm').querySelectorAll('input')) {
+    for (const input of $('runForm').querySelectorAll('input, select')) {
       const v = parseInput(input.value, input.dataset.type);
       if (v !== undefined) config[input.name] = v;
     }

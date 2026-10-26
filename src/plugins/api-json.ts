@@ -5,10 +5,10 @@ const configSchema: ConfigField[] = [
     { name: 'startUrls', type: 'array', required: true, description: 'API 起点 URL 列表' },
     { name: 'headers', type: 'object', description: '附加请求头 { 名称: 值 }' },
     { name: 'itemPath', type: 'string', description: '条目在 JSON 里的取值路径，用 . 分隔（如 data.items；留空则整个响应作为条目）' },
-    { name: 'pageParam', type: 'string', description: '分页参数名（如 page / _page）；配置后自动翻页' },
+    { name: 'pageParam', type: 'string', description: '分页参数名；配置后自动翻页', suggestions: ['page', '_page'] },
     { name: 'startPage', type: 'number', description: '起始页码', default: 1 },
     { name: 'maxPages', type: 'number', description: '最多抓多少页', default: 1 },
-    { name: 'stopOnEmpty', type: 'boolean', description: '某页为空时停止翻页', default: true },
+    { name: 'stopOnEmpty', type: 'boolean', description: '某页为空时停止翻页', default: true, enum: [true, false] },
     { name: 'maxRequests', type: 'number', description: '最大请求数（安全阀）', default: 1000 },
 ];
 

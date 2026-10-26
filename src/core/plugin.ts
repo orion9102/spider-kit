@@ -13,6 +13,10 @@ export interface ConfigField {
     description: string;
     required?: boolean;
     default?: unknown;
+    /** 封闭取值。界面用下拉框，校验拒绝列表外的值。 */
+    enum?: unknown[];
+    /** 推荐取值。界面用可输入下拉，仍允许手填。 */
+    suggestions?: unknown[];
 }
 
 export type SpiderConfig = Record<string, unknown>;

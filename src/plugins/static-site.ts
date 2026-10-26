@@ -18,7 +18,7 @@ const configSchema: ConfigField[] = [
     { name: 'itemSelector', type: 'string', description: '条目容器选择器；不填则整页记为一条' },
     { name: 'fields', type: 'object', description: '字段映射 { 输出字段: CSS选择器 }，选择器支持 "css@attr" 提取属性' },
     { name: 'maxRequests', type: 'number', description: '最大抓取页数', default: 100 },
-    { name: 'respectRobots', type: 'boolean', description: '是否遵守 robots.txt', default: true },
+    { name: 'respectRobots', type: 'boolean', description: '是否遵守 robots.txt', default: true, enum: [true, false] },
 ];
 
 /** 从一个元素按 "css@attr" 语法提取字段值（$ 来自 crawler 上下文，宽松类型以兼容 crawlee 内置 cheerio 版本） */

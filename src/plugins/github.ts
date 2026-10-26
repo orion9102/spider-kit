@@ -4,7 +4,7 @@ import type { SpiderPlugin, PluginContext, ConfigField } from '../core/plugin.js
 type GithubMode = 'search-repos' | 'user-repos' | 'repo-issues';
 
 const configSchema: ConfigField[] = [
-    { name: 'mode', type: 'string', required: true, description: '模式: search-repos | user-repos | repo-issues' },
+    { name: 'mode', type: 'string', required: true, description: '抓取模式', enum: ['search-repos', 'user-repos', 'repo-issues'] },
     { name: 'query', type: 'string', description: '[search-repos] 搜索关键词（支持 GitHub qualifier，如 "crawler language:typescript"）' },
     { name: 'user', type: 'string', description: '[user-repos] 用户名/组织名' },
     { name: 'repo', type: 'string', description: '[repo-issues] 仓库 "owner/name"' },

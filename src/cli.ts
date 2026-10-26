@@ -39,7 +39,12 @@ program
         for (const f of plugin.configSchema) {
             const req = f.required ? '必填' : '可选';
             const def = f.default !== undefined ? `, 默认 ${JSON.stringify(f.default)}` : '';
-            console.log(`  ${f.name}: <${f.type}> [${req}${def}] ${f.description}`);
+            const choices = f.enum?.length
+                ? `, 枚举 ${f.enum.map((item) => JSON.stringify(item)).join(' | ')}`
+                : f.suggestions?.length
+                    ? `, 建议 ${f.suggestions.map((item) => JSON.stringify(item)).join(' | ')}`
+                    : '';
+            console.log(`  ${f.name}: <${f.type}> [${req}${def}${choices}] ${f.description}`);
         }
     });
 

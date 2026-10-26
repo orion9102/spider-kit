@@ -30,6 +30,11 @@ export function validateConfig(plugin: SpiderPlugin, config: SpiderConfig): stri
         if (field.required && (config[field.name] === undefined || config[field.name] === null)) {
             errors.push(`缺少必填配置 "${field.name}" (${field.type}) — ${field.description}`);
         }
+        if (field.enum && config[field.name] !== undefined && config[field.name] !== null) {
+            const value = config[field.name];
+            const allowed = field.enum.some((item) => Object.is(item, value));
+            if (!allowed) errors.push(`配置 "${field.name}" 只能是 ${field.enum.map((item) => JSON.stringify(item)).join(' | ')}`);
+        }
     }
     return errors;
 }
@@ -63,7 +68,6 @@ export interface RunResult {
 export async function runPlugin(plugin: SpiderPlugin, fileConfig: SpiderConfig = {}, opts: RunOptions = {}): Promise<RunResult> {
     const config = mergeConfig(plugin, fileConfig, opts.overrides ?? {});
     const errors = validateConfig(plugin, config);
-    if (errors.length) throw new Error(`[配置错误] ${errors.join('; ')}`);
     const runStartedAt = new Date().toISOString();
 
     // 每次运行独立的 dataset/requestQueue，互不污染。
@@ -71,6 +75,12 @@ export async function runPlugin(plugin: SpiderPlugin, fileConfig: SpiderConfig =
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
     const suffix = `${process.pid.toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const runId = `${plugin.name}_${stamp}_${suffix}`;
+    if (errors.length) {
+        runs.start(runId, plugin.name);
+        const message = `[配置错误] ${errors.join('; ')}`;
+        runs.fail(runId, message);
+        throw new Error(message);
+    }
     const dataset = await crawlee.Dataset.open(runId);
     const requestQueue = await crawlee.RequestQueue.open(runId);
     const record = runs.start(runId, plugin.name);

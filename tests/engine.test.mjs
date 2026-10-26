@@ -37,3 +37,12 @@ test('必填缺失时校验报错，且信息含字段名', () => {
 test('必填齐全时校验通过', () => {
   assert.deepEqual(validateConfig(fakePlugin, mergeConfig(fakePlugin, { query: 'a' })), []);
 });
+
+test('枚举字段拒绝列表外的值', () => {
+  const plugin = {
+    ...fakePlugin,
+    configSchema: [{ name: 'mode', type: 'string', required: true, enum: ['search-repos', 'user-repos'], description: '模式' }],
+  };
+  assert.equal(validateConfig(plugin, { mode: 'search-repos' }).length, 0);
+  assert.match(validateConfig(plugin, { mode: 'other' })[0], /mode/);
+});
