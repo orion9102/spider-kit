@@ -46,7 +46,7 @@
     <div class="logo">🕷️</div>
     <div><h1>spider-kit 使用文档</h1><div class="sub">蜜桃抹茶 · PEACH MATCHA</div></div>
   </a>
-  <nav><a href="/">返回控制台</a></nav>
+  <nav><a href="/api-docs">API 文档</a><a href="/">返回控制台</a></nav>
 </header>
 <main>
   <p>spider-kit 是一个插件化爬虫。页面上选插件、填配置、点开始，就能看日志和结果。当前内置三个插件：静态网页、JSON API、GitHub。</p>
@@ -139,7 +139,10 @@ node dist/cli.js run static-site -c examples/quotes.json
 node dist/cli.js run github --set mode=search-repos --set 'query=gcpp' --set limit=10</pre>
   <p>本地 Web 调试用 <code>npm run web</code>，默认只听 <code>127.0.0.1:3210</code>。</p>
 
-  <h2>6. 现在做不到</h2>
+  <h2>6. API</h2>
+  <p>程序调用看 <a href="/api-docs">Scalar API 文档</a>。规范文件在 <a href="/openapi.json">/openapi.json</a>。下任务用 <code>POST /api/runs</code>，随后用返回前的运行列表找到 <code>runId</code>。</p>
+
+  <h2>7. 现在做不到</h2>
   <ul>
     <li>不渲染 JavaScript，打不开需要浏览器执行后才有内容的页面。</li>
     <li>不登录、不保持 Cookie、不处理验证码。</li>

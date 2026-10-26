@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>spider-kit API</title>
+<style>
+  html, body, #app { margin:0; height:100%; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="/vendor/scalar-api-reference.js?v=20261026"></script>
+<script>
+Scalar.createApiReference('#app', {
+  url: '/openapi.json',
+  theme: 'alternate',
+  hideDownloadButton: false,
+});
+</script>
+</body>
+</html>

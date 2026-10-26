@@ -3,6 +3,8 @@
  * API:
  *   GET  /                    页面
  *   GET  /docs                使用文档
+ *   GET  /api-docs            Scalar API 文档
+ *   GET  /openapi.json        OpenAPI 3.1 规范
  *   GET  /api/plugins         插件列表与配置项
  *   POST /api/runs            发起运行 { plugin, config }
  *   GET  /api/runs            运行列表（含进行中）
@@ -63,6 +65,21 @@ export function startWebServer(port = Number(process.env.PORT ?? 3210)): Promise
                 const file = url.pathname === '/' ? 'index.html' : 'docs.html';
                 const html = await readFile(path.join(ROOT, 'web', file), 'utf8');
                 res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(html);
+                return;
+            }
+            if (req.method === 'GET' && (url.pathname === '/api-docs' || url.pathname === '/api-docs/')) {
+                const html = await readFile(path.join(ROOT, 'web', 'api-docs.html'), 'utf8');
+                res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(html);
+                return;
+            }
+            if (req.method === 'GET' && url.pathname === '/openapi.json') {
+                const spec = await readFile(path.join(ROOT, 'web', 'openapi.json'), 'utf8');
+                res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' }).end(spec);
+                return;
+            }
+            if (req.method === 'GET' && url.pathname === '/vendor/scalar-api-reference.js') {
+                const script = await readFile(path.join(ROOT, 'web', 'vendor', 'scalar-api-reference.js'));
+                res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' }).end(script);
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/api/plugins') {

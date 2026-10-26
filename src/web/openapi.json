@@ -1,0 +1,280 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "spider-kit API",
+    "version": "0.1.0",
+    "description": "插件化爬虫的 HTTP 接口：查看插件、下发任务、查看日志和结果。接口目前没有鉴权。\n\n[返回控制台](/) · [使用文档](/docs)"
+  },
+  "servers": [
+    { "url": "https://spider-kit.909939.xyz", "description": "公网" },
+    { "url": "http://192.168.88.47:3241", "description": "局域网 s47" },
+    { "url": "http://127.0.0.1:3210", "description": "本机默认" }
+  ],
+  "tags": [
+    { "name": "插件", "description": "可用爬虫插件及其配置项" },
+    { "name": "运行", "description": "任务下发、状态和日志" },
+    { "name": "结果", "description": "已完成任务的条目预览" }
+  ],
+  "paths": {
+    "/api/plugins": {
+      "get": {
+        "tags": ["插件"],
+        "operationId": "listPlugins",
+        "summary": "列出插件",
+        "description": "返回内置插件和 `plugins/` 下被发现的外部插件。`fields` 就是页面表单和配置校验使用的 schema。",
+        "responses": {
+          "200": {
+            "description": "插件列表",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs": {
+      "get": {
+        "tags": ["运行"],
+        "operationId": "listRuns",
+        "summary": "列出运行",
+        "description": "按开始时间倒序。列表里的 `lines` 是日志条数，不是日志正文；正文用单次运行接口取。记录只存在当前进程内存中，容器重启后清空。",
+        "responses": {
+          "200": {
+            "description": "运行摘要",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RunSummary" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["运行"],
+        "operationId": "createRun",
+        "summary": "发起运行",
+        "description": "请求被接受后立即返回，抓取在后台进行。插件名不存在会当场 404；配置缺必填项则任务稍后变为 `failed`。同一时间建议只跑一个任务。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateRunRequest" },
+              "examples": {
+                "github": {
+                  "summary": "搜索 GitHub 仓库",
+                  "value": {
+                    "plugin": "github",
+                    "config": { "mode": "search-repos", "query": "gcpp", "limit": 3 }
+                  }
+                },
+                "static-site": {
+                  "summary": "抽取静态网页",
+                  "value": {
+                    "plugin": "static-site",
+                    "config": {
+                      "startUrls": ["https://quotes.toscrape.com/"],
+                      "itemSelector": ".quote",
+                      "fields": { "text": ".text", "author": ".author" },
+                      "maxRequests": 3
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "已接受，尚未完成",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Accepted" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/runs/{id}": {
+      "get": {
+        "tags": ["运行"],
+        "operationId": "getRun",
+        "summary": "查看一次运行",
+        "description": "返回状态、统计和最多 500 行日志。`id` 是 `插件名_时间戳_后缀`，可从运行列表获得。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "github_2026-10-26_14-03-32_1iz"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "运行详情",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RunDetail" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/results/{id}": {
+      "get": {
+        "tags": ["结果"],
+        "operationId": "getResults",
+        "summary": "查看结果预览",
+        "description": "读取该次运行的 `items.json`。响应最多包含前 500 条；`total` 是完整条数。任务未完成或结果文件不可读时返回错误。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "结果预览",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ResultPage" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "Error": {
+        "description": "请求失败",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Plugin": {
+        "type": "object",
+        "required": ["name", "version", "description", "requiresBrowser", "fields"],
+        "properties": {
+          "name": { "type": "string", "examples": ["github"] },
+          "version": { "type": "string", "examples": ["0.1.0"] },
+          "description": { "type": "string" },
+          "requiresBrowser": { "type": "boolean" },
+          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/ConfigField" } }
+        }
+      },
+      "ConfigField": {
+        "type": "object",
+        "required": ["name", "type", "description"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["string", "number", "boolean", "array", "object"] },
+          "description": { "type": "string" },
+          "required": { "type": "boolean" },
+          "default": {}
+        }
+      },
+      "CreateRunRequest": {
+        "type": "object",
+        "required": ["plugin"],
+        "properties": {
+          "plugin": { "type": "string", "description": "插件名，来自插件列表" },
+          "config": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "插件配置。数字、布尔、数组和对象按 JSON 类型传递，不要传字符串。"
+          },
+          "outDir": { "type": "string", "description": "可选结果目录。不填则写入 output/<runId>/" }
+        }
+      },
+      "Accepted": {
+        "type": "object",
+        "required": ["status"],
+        "properties": { "status": { "type": "string", "const": "accepted" } }
+      },
+      "RunStats": {
+        "type": "object",
+        "properties": {
+          "requestsTotal": { "type": "integer" },
+          "requestsFailed": { "type": "integer" },
+          "retryCount": { "type": "integer" },
+          "durationMs": { "type": "integer" }
+        }
+      },
+      "RunSummary": {
+        "type": "object",
+        "required": ["runId", "plugin", "status", "startedAt", "lines"],
+        "properties": {
+          "runId": { "type": "string" },
+          "plugin": { "type": "string" },
+          "status": { "type": "string", "enum": ["running", "done", "failed"] },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "finishedAt": { "type": "string", "format": "date-time" },
+          "itemCount": { "type": "integer" },
+          "stats": { "$ref": "#/components/schemas/RunStats" },
+          "error": { "type": "string" },
+          "lines": { "type": "integer", "description": "日志条数" },
+          "jsonPath": { "type": "string" },
+          "jsonlPath": { "type": "string" }
+        }
+      },
+      "LogLine": {
+        "type": "object",
+        "required": ["ts", "level", "message"],
+        "properties": {
+          "ts": { "type": "string", "format": "date-time" },
+          "level": { "type": "string", "enum": ["info", "warning", "error", "debug"] },
+          "message": { "type": "string" }
+        }
+      },
+      "RunDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/RunSummary" },
+          {
+            "type": "object",
+            "properties": {
+              "lines": {
+                "type": "array",
+                "description": "日志正文，最多保留 500 行",
+                "items": { "$ref": "#/components/schemas/LogLine" }
+              }
+            }
+          }
+        ]
+      },
+      "ResultPage": {
+        "type": "object",
+        "required": ["total", "items"],
+        "properties": {
+          "total": { "type": "integer" },
+          "items": {
+            "type": "array",
+            "maxItems": 500,
+            "items": { "type": "object", "additionalProperties": true }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": { "error": { "type": "string" } }
+      }
+    }
+  }
+}
