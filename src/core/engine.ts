@@ -1,5 +1,5 @@
 import * as crawlee from 'crawlee';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { SpiderPlugin, SpiderConfig, PluginContext, SpiderLogger } from './plugin.js';
 import { runs } from './runs.js';
@@ -34,9 +34,14 @@ export function validateConfig(plugin: SpiderPlugin, config: SpiderConfig): stri
     return errors;
 }
 
-/** 清理内部存储目录（结果已导出到 output/，防止 ./storage 无限增长） */
+/** 清理内部存储目录（结果已导出到 output/，防止 ./storage 无限增长）。
+ *  只清空内容而不删除目录本身：容器部署时 ./storage 常是挂载卷，运行中无法 rmdir。 */
 export async function purgeStorage(): Promise<void> {
-    await rm('./storage', { recursive: true, force: true });
+    const dir = './storage';
+    const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+        await rm(path.join(dir, entry.name), { recursive: true, force: true });
+    }
 }
 
 export interface RunStats {

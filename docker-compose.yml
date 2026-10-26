@@ -1,0 +1,21 @@
+services:
+  spider-kit:
+    build:
+      context: .
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+    container_name: spider-kit
+    restart: unless-stopped
+    ports:
+      - "3241:3210"
+    volumes:
+      - ./data/output:/app/output
+      - ./data/storage:/app/storage
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3210
+      # 宿主侧代理（抓外网时需要）：host.docker.internal 在 Linux 上需 extra_hosts 映射
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

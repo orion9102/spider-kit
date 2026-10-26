@@ -1,0 +1,8 @@
+node_modules
+dist
+storage
+output
+data
+.git
+.DS_Store
+*.tar.gz

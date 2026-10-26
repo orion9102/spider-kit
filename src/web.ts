@@ -42,14 +42,15 @@ function launchRun(pluginName: string, config: Record<string, unknown>, outDir?:
             if (!plugin) throw new Error(`未找到插件 "${pluginName}"`);
             await purgeStorage();
             await runPlugin(plugin, config, outDir ? { outDir } : {});
-        } catch {
-            // 错误已由 runPlugin 记入注册表；这里不重抛，避免 unhandledRejection
+        } catch (err) {
+            // 注册表之外的失败（如 purgeStorage 抛错）也要留痕：打印到容器日志
+            console.error('[launchRun]', err instanceof Error ? err.stack ?? err.message : String(err));
         }
     })();
     return 'accepted';
 }
 
-export function startWebServer(port = 3210): Promise<{ port: number; close: () => void }> {
+export function startWebServer(port = Number(process.env.PORT ?? 3210)): Promise<{ port: number; close: () => void }> {
     const server = createServer(async (req, res) => {
         const url = new URL(req.url ?? '/', 'http://localhost');
         const parts = url.pathname.split('/').filter(Boolean);
@@ -107,8 +108,10 @@ export function startWebServer(port = 3210): Promise<{ port: number; close: () =
         }
     });
 
+    // HOST 默认 127.0.0.1（本机安全）；容器部署时设 HOST=0.0.0.0 才能被端口映射
+    const host = process.env.HOST ?? '127.0.0.1';
     return new Promise((resolve) => {
-        server.listen(port, '127.0.0.1', () => {
+        server.listen(port, host, () => {
             resolve({ port: (server.address() as { port: number }).port, close: () => server.close() });
         });
     });
@@ -116,8 +119,8 @@ export function startWebServer(port = 3210): Promise<{ port: number; close: () =
 
 // 直接运行: node dist/web.js [port]
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-    const port = Number(process.argv[2] ?? 3210);
+    const port = process.argv[2] ? Number(process.argv[2]) : undefined;
     startWebServer(port).then(({ port: actual }) => {
-        console.log(`spider-kit Web 界面: http://127.0.0.1:${actual}`);
+        console.log(`spider-kit Web 界面: http://${process.env.HOST ?? '127.0.0.1'}:${actual}`);
     });
 }
