@@ -2,6 +2,7 @@
  *
  * API:
  *   GET  /                    页面
+ *   GET  /docs                使用文档
  *   GET  /api/plugins         插件列表与配置项
  *   POST /api/runs            发起运行 { plugin, config }
  *   GET  /api/runs            运行列表（含进行中）
@@ -58,8 +59,9 @@ export function startWebServer(port = Number(process.env.PORT ?? 3210)): Promise
         const parts = url.pathname.split('/').filter(Boolean);
 
         try {
-            if (req.method === 'GET' && url.pathname === '/') {
-                const html = await readFile(path.join(ROOT, 'web', 'index.html'), 'utf8');
+            if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/docs' || url.pathname === '/docs.html')) {
+                const file = url.pathname === '/' ? 'index.html' : 'docs.html';
+                const html = await readFile(path.join(ROOT, 'web', file), 'utf8');
                 res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(html);
                 return;
             }

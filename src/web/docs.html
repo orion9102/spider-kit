@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>spider-kit 使用文档</title>
+<style>
+  :root {
+    --peach:#f7a8a0; --peach-deep:#e8837a; --peach-soft:#fdecea;
+    --matcha:#8aa86a; --matcha-deep:#6b8a4f; --matcha-soft:#eef2e4;
+    --cream:#faf6f0; --card:#fff; --line:#f0e6dc; --fg:#5a4a42; --dim:#a89890;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--cream); color:var(--fg);
+    font:15px/1.75 "PingFang SC","Hiragino Sans GB",ui-sans-serif,system-ui,sans-serif;
+  }
+  header {
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:18px 28px; border-bottom:1px solid var(--line); background:#fff;
+    position:sticky; top:0; z-index:2;
+  }
+  .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+  .logo { width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--peach) 55%,var(--matcha) 55%); display:flex; align-items:center; justify-content:center; }
+  h1 { font-size:16px; margin:0; }
+  .sub { font-size:11px; color:var(--dim); letter-spacing:.12em; }
+  nav a { color:var(--matcha-deep); text-decoration:none; margin-left:16px; font-size:13px; }
+  main { max-width:860px; margin:0 auto; padding:28px 22px 80px; }
+  h2 { font-size:18px; margin:32px 0 10px; color:var(--matcha-deep); }
+  h3 { font-size:15px; margin:22px 0 8px; }
+  p, li { color:var(--fg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:12px 0; }
+  code, pre { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; }
+  code { background:var(--peach-soft); color:#8a4d48; padding:1px 6px; border-radius:6px; }
+  pre { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; overflow:auto; }
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
+  th, td { border-bottom:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; font-size:13px; }
+  th { background:var(--matcha-soft); color:var(--matcha-deep); }
+  .note { background:var(--matcha-soft); border-radius:12px; padding:12px 14px; }
+  .warn { background:var(--peach-soft); border-radius:12px; padding:12px 14px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">
+    <div class="logo">🕷️</div>
+    <div><h1>spider-kit 使用文档</h1><div class="sub">蜜桃抹茶 · PEACH MATCHA</div></div>
+  </a>
+  <nav><a href="/">返回控制台</a></nav>
+</header>
+<main>
+  <p>spider-kit 是一个插件化爬虫。页面上选插件、填配置、点开始，就能看日志和结果。当前内置三个插件：静态网页、JSON API、GitHub。</p>
+
+  <h2>1. 打开哪里</h2>
+  <div class="card">
+    <p>公网：<a href="https://spider-kit.909939.xyz/">https://spider-kit.909939.xyz/</a></p>
+    <p>局域网：<a href="http://192.168.88.47:3241/">http://192.168.88.47:3241/</a></p>
+  </div>
+  <div class="warn">页面和接口目前没有登录。知道地址的人都能下任务，不要填会泄露的密钥；GitHub Token 优先用服务器上的 <code>GITHUB_TOKEN</code> 环境变量。</div>
+
+  <h2>2. 页面怎么用</h2>
+  <ol>
+    <li>左侧点一个插件。表单按这个插件的配置项生成，带红色星号的是必填。</li>
+    <li>填值。数字直接写数字；布尔写 <code>true</code> 或 <code>false</code>；数组和对象写 JSON，例如 <code>["https://example.com"]</code>。</li>
+    <li>点「开始爬取」。中间运行记录会出现一条「运行中」。</li>
+    <li>点这条记录。右侧上方是实时日志，完成后下方出现结果表，最多显示前 500 条。</li>
+  </ol>
+  <p>一次只建议跑一个任务。刷新页面不会中断正在跑的任务，但运行记录存在服务进程里，容器重启后列表会清空；已经写出的结果文件还在服务器的 <code>output/</code> 目录。</p>
+
+  <h2>3. 三个插件</h2>
+
+  <h3>static-site · 静态网页</h3>
+  <p>抓服务端返回的 HTML，不执行页面里的 JavaScript。适合结构固定、链接能直接打开的站点。</p>
+  <table>
+    <tr><th>字段</th><th>必填</th><th>怎么填</th></tr>
+    <tr><td><code>startUrls</code></td><td>是</td><td>种子地址数组</td></tr>
+    <tr><td><code>itemSelector</code></td><td>否</td><td>每条记录的 CSS 容器，如 <code>.quote</code></td></tr>
+    <tr><td><code>fields</code></td><td>否</td><td><code>{"标题":"h2","链接":"a@href"}</code>。<code>@</code> 后面是属性名</td></tr>
+    <tr><td><code>maxRequests</code></td><td>否</td><td>最多请求数，默认 100</td></tr>
+    <tr><td><code>linkSelector</code></td><td>否</td><td>继续发现链接的选择器，默认 <code>a[href]</code></td></tr>
+    <tr><td><code>allowedGlobs</code></td><td>否</td><td>允许继续抓的范围，默认只留在种子站点内</td></tr>
+    <tr><td><code>respectRobots</code></td><td>否</td><td>默认 <code>true</code>，遵守 robots.txt</td></tr>
+  </table>
+  <pre>{
+  "startUrls": ["https://quotes.toscrape.com/"],
+  "itemSelector": ".quote",
+  "fields": {"text": ".text", "author": ".author", "firstTag": ".tag"},
+  "maxRequests": 3
+}</pre>
+
+  <h3>api-json · JSON 接口</h3>
+  <p>直接请求返回 JSON 的地址，并可按页码翻页。空页默认停止。</p>
+  <table>
+    <tr><th>字段</th><th>必填</th><th>怎么填</th></tr>
+    <tr><td><code>startUrls</code></td><td>是</td><td>接口地址数组</td></tr>
+    <tr><td><code>itemPath</code></td><td>否</td><td>条目在 JSON 里的路径，如 <code>data.items</code>。留空表示整个响应就是条目</td></tr>
+    <tr><td><code>pageParam</code></td><td>否</td><td>页码参数名。留空则不翻页</td></tr>
+    <tr><td><code>startPage</code></td><td>否</td><td>起始页，默认 1</td></tr>
+    <tr><td><code>maxPages</code></td><td>否</td><td>最多翻几页，默认 1</td></tr>
+    <tr><td><code>headers</code></td><td>否</td><td>附加请求头，JSON 对象</td></tr>
+    <tr><td><code>stopOnEmpty</code></td><td>否</td><td>空页是否停止，默认 true</td></tr>
+  </table>
+  <pre>{
+  "startUrls": ["https://jsonplaceholder.typicode.com/posts"],
+  "pageParam": "_page",
+  "startPage": 1,
+  "maxPages": 2
+}</pre>
+
+  <h3>github · GitHub</h3>
+  <p>只访问 <code>api.github.com</code>。三种模式：搜仓库、列用户仓库、列 Issues。</p>
+  <table>
+    <tr><th>字段</th><th>必填</th><th>怎么填</th></tr>
+    <tr><td><code>mode</code></td><td>是</td><td><code>search-repos</code>、<code>user-repos</code> 或 <code>repo-issues</code></td></tr>
+    <tr><td><code>query</code></td><td>搜仓库时</td><td>GitHub 搜索语法，如 <code>crawler language:typescript</code></td></tr>
+    <tr><td><code>user</code></td><td>列仓库时</td><td>用户或组织名</td></tr>
+    <tr><td><code>repo</code></td><td>列 Issues 时</td><td><code>owner/name</code></td></tr>
+    <tr><td><code>limit</code></td><td>否</td><td>最多保留多少条，默认 50</td></tr>
+    <tr><td><code>token</code></td><td>否</td><td>不填则使用环境变量。匿名额度很低</td></tr>
+  </table>
+  <pre>{
+  "mode": "search-repos",
+  "query": "web crawler language:typescript",
+  "limit": 10
+}</pre>
+
+  <h2>4. 结果在哪</h2>
+  <div class="note">
+    <p>页面表格只是预览。完整结果在当次输出目录：</p>
+    <p><code>items.json</code> 是缩进数组，<code>items.jsonl</code> 是一行一条。<code>manifest.json</code> 记录配置、起止时间和统计，Token 会脱敏。</p>
+    <p>网页条目会自动带上 <code>__pageUrl</code> 和 <code>__scrapedAt</code>。</p>
+  </div>
+
+  <h2>5. 命令行</h2>
+  <p>同一套插件也能在本机跑。先在项目目录执行 <code>npm install</code> 和 <code>npm run build</code>。</p>
+  <pre>node dist/cli.js list
+node dist/cli.js info static-site
+node dist/cli.js run static-site -c examples/quotes.json
+node dist/cli.js run github --set mode=search-repos --set 'query=gcpp' --set limit=10</pre>
+  <p>本地 Web 调试用 <code>npm run web</code>，默认只听 <code>127.0.0.1:3210</code>。</p>
+
+  <h2>6. 现在做不到</h2>
+  <ul>
+    <li>不渲染 JavaScript，打不开需要浏览器执行后才有内容的页面。</li>
+    <li>不登录、不保持 Cookie、不处理验证码。</li>
+    <li>没有定时任务、增量去重、代理池。</li>
+    <li>不抓需要绕过登录墙、付费墙或明确禁止抓取的站点。</li>
+  </ul>
+</main>
+</body>
+</html>
