@@ -3,73 +3,136 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>spider-kit</title>
+<title>spider-kit · 蜜桃抹茶</title>
 <style>
-  :root { --bg:#0f1115; --panel:#171a21; --line:#262b36; --fg:#d7dce5; --dim:#7b8496; --acc:#4f8cff; --ok:#3fb950; --warn:#d29922; --err:#f85149; }
+  /* 蜜桃抹茶主题：蜜桃粉 + 抹茶绿 + 奶油底 */
+  :root {
+    --peach:#f7a8a0;         /* 蜜桃主色 */
+    --peach-deep:#e8837a;    /* 蜜桃深 */
+    --peach-soft:#fdecea;    /* 蜜桃浅底 */
+    --matcha:#8aa86a;        /* 抹茶主色 */
+    --matcha-deep:#6b8a4f;   /* 抹茶深 */
+    --matcha-soft:#eef2e4;   /* 抹茶浅底 */
+    --cream:#faf6f0;         /* 奶油底 */
+    --card:#ffffff;
+    --line:#f0e6dc;
+    --fg:#5a4a42;            /* 深可可文字 */
+    --dim:#a89890;
+    --ok:#7fa663;
+    --warn:#e0a24b;
+    --err:#e0776f;
+  }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:13px/1.5 ui-monospace,Menlo,Consolas,monospace; display:flex; height:100vh; }
-  h1 { font-size:14px; margin:0 0 8px; color:var(--acc); }
-  h2 { font-size:12px; margin:0 0 6px; color:var(--dim); text-transform:uppercase; letter-spacing:.08em; }
-  .col { padding:14px; overflow-y:auto; }
-  #left { width:260px; border-right:1px solid var(--line); flex-shrink:0; }
-  #mid { width:320px; border-right:1px solid var(--line); flex-shrink:0; }
-  #right { flex:1; }
-  .plugin { padding:8px 10px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; cursor:pointer; }
-  .plugin:hover, .plugin.sel { border-color:var(--acc); }
-  .plugin .desc { color:var(--dim); font-size:11px; }
-  .field { margin:8px 0 4px; }
-  .field label { display:block; color:var(--dim); font-size:11px; margin-bottom:2px; }
-  .field input, .field textarea { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:5px 7px; font:inherit; }
+  body {
+    margin:0; background:var(--cream); color:var(--fg);
+    font:13px/1.6 "PingFang SC","Hiragino Sans GB",ui-sans-serif,system-ui,sans-serif;
+    display:flex; height:100vh;
+  }
+  .col { padding:18px; overflow-y:auto; }
+  #left { width:280px; border-right:1px solid var(--line); flex-shrink:0; }
+  #mid  { width:330px; border-right:1px solid var(--line); flex-shrink:0; background:var(--matcha-soft); }
+  #right{ flex:1; background:var(--card); }
+
+  /* 标题 */
+  .brand { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .logo { width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--peach) 55%,var(--matcha) 55%); display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .brand h1 { font-size:16px; margin:0; color:var(--fg); font-weight:700; }
+  .brand .sub { font-size:10px; color:var(--dim); letter-spacing:.12em; }
+  h2 { font-size:11px; margin:18px 0 8px; color:var(--matcha-deep); letter-spacing:.15em; font-weight:600; }
+  #mid h2 { color:var(--matcha-deep); }
+
+  /* 卡片 */
+  .plugin, .run {
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    margin-bottom:8px; cursor:pointer; padding:11px 13px;
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .plugin:hover, .run:hover { border-color:var(--peach); box-shadow:0 2px 10px rgba(247,168,160,.25); }
+  .plugin.sel { border-color:var(--peach-deep); background:var(--peach-soft); }
+  .run.sel { border-color:var(--matcha-deep); background:var(--matcha-soft); }
+  .plugin .desc, .run .meta { color:var(--dim); font-size:11px; margin-top:2px; }
+  .plugin b { color:var(--fg); }
+
+  /* 表单 */
+  .field { margin:9px 0; }
+  .field label { display:block; color:var(--dim); font-size:11px; margin-bottom:3px; }
   .field .req { color:var(--err); }
-  .field .hint { color:var(--dim); font-size:10px; }
-  button { background:var(--acc); color:#fff; border:0; border-radius:6px; padding:7px 14px; font:inherit; cursor:pointer; width:100%; margin-top:10px; }
-  button:disabled { background:var(--line); color:var(--dim); cursor:not-allowed; }
-  .run { padding:8px 10px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; cursor:pointer; }
-  .run:hover, .run.sel { border-color:var(--acc); }
-  .run .meta { color:var(--dim); font-size:11px; }
-  .badge { display:inline-block; padding:1px 7px; border-radius:9px; font-size:10px; }
-  .badge.running { background:#1f2a3d; color:var(--acc); }
-  .badge.done { background:#12261a; color:var(--ok); }
-  .badge.failed { background:#331a1a; color:var(--err); }
-  #logs { background:#0b0d11; border:1px solid var(--line); border-radius:6px; padding:10px; height:45%; overflow-y:auto; white-space:pre-wrap; word-break:break-all; font-size:12px; }
-  #logs .info { color:var(--fg); } #logs .warning { color:var(--warn); } #logs .error { color:var(--err); } #logs .debug { color:var(--dim); }
-  #logs .ts { color:var(--dim); }
-  #results { margin-top:10px; border:1px solid var(--line); border-radius:6px; overflow:auto; height:calc(55% - 30px); }
-  table { border-collapse:collapse; width:100%; font-size:11px; }
-  th, td { border-bottom:1px solid var(--line); padding:4px 8px; text-align:left; vertical-align:top; }
-  th { color:var(--dim); position:sticky; top:0; background:var(--panel); }
-  #runStats { color:var(--dim); font-size:11px; margin:6px 0; }
-  .empty { color:var(--dim); padding:20px; text-align:center; }
+  .field .hint { color:var(--matcha-deep); font-size:10px; }
+  .field input {
+    width:100%; background:var(--cream); color:var(--fg);
+    border:1px solid var(--line); border-radius:8px; padding:7px 10px; font:inherit; outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus { border-color:var(--peach); background:#fff; }
+  button {
+    background:linear-gradient(135deg,var(--peach) 0%,var(--peach-deep) 100%);
+    color:#fff; border:0; border-radius:20px; padding:9px 16px; font:inherit; font-weight:600;
+    cursor:pointer; width:100%; margin-top:12px; letter-spacing:.1em;
+    box-shadow:0 3px 10px rgba(232,131,122,.35);
+    transition:transform .12s, box-shadow .12s;
+  }
+  button:hover { transform:translateY(-1px); box-shadow:0 5px 14px rgba(232,131,122,.45); }
+  button:disabled { background:var(--line); color:var(--dim); cursor:not-allowed; box-shadow:none; transform:none; }
+
+  /* 状态徽章 */
+  .badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:10px; font-weight:600; letter-spacing:.05em; }
+  .badge.running { background:var(--peach-soft); color:var(--peach-deep); animation:pulse 1.6s ease infinite; }
+  .badge.done    { background:var(--matcha-soft); color:var(--matcha-deep); }
+  .badge.failed  { background:#fbe5e3; color:var(--err); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+
+  /* 日志 */
+  #logs {
+    background:var(--cream); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; height:44%; overflow-y:auto;
+    font:12px/1.7 ui-monospace,Menlo,Consolas,monospace; white-space:pre-wrap; word-break:break-all;
+  }
+  #logs .info { color:var(--fg); } #logs .warning { color:var(--warn); }
+  #logs .error { color:var(--err); } #logs .debug { color:var(--dim); }
+  #logs .ts { color:var(--matcha); }
+
+  /* 结果表 */
+  #results { margin-top:12px; border:1px solid var(--line); border-radius:12px; overflow:auto; height:calc(56% - 44px); }
+  table { border-collapse:collapse; width:100%; font-size:11.5px; }
+  th { position:sticky; top:0; background:var(--matcha-soft); color:var(--matcha-deep); font-weight:600; }
+  th, td { border-bottom:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top; }
+  tr:hover td { background:var(--peach-soft); }
+
+  #runStats { color:var(--dim); font-size:11.5px; margin:4px 0 10px; }
+  .empty { color:var(--dim); padding:26px; text-align:center; background:var(--card); border-radius:12px; }
+  #detailTitle { color:var(--fg); }
 </style>
 </head>
 <body>
 <div class="col" id="left">
-  <h1>spider-kit</h1>
+  <div class="brand">
+    <div class="logo">🕷️</div>
+    <div><h1>spider-kit</h1><div class="sub">蜜桃抹茶 · PEACH MATCHA</div></div>
+  </div>
   <h2>插件</h2>
   <div id="plugins"></div>
-  <h2 style="margin-top:16px">发起运行</h2>
+  <h2 style="margin-top:18px">发起运行</h2>
   <form id="runForm"></form>
-  <button id="submit" disabled>运行</button>
+  <button id="submit" disabled>开始爬取</button>
 </div>
 <div class="col" id="mid">
-  <h2>运行</h2>
+  <h2>运行记录</h2>
   <div id="runs"></div>
 </div>
 <div class="col" id="right">
-  <h2 id="detailTitle">详情</h2>
+  <h2 id="detailTitle">运行详情</h2>
   <div id="runStats"></div>
   <div id="logs"></div>
   <div id="results"></div>
 </div>
 <script>
 'use strict';
-let plugins = [], selectedPlugin = null, selectedRun = null, pollTimer = null;
+let plugins = [], selectedPlugin = null, selectedRun = null;
 
 const $ = (id) => document.getElementById(id);
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
-  if (!res.ok && res.status !== 404) throw new Error(path + ' -> ' + res.status);
   return res.json();
 }
 
@@ -79,7 +142,7 @@ async function loadPlugins() {
   for (const p of plugins) {
     const el = document.createElement('div');
     el.className = 'plugin';
-    el.innerHTML = '<div><b>' + p.name + '</b>@' + p.version + '</div><div class="desc">' + (p.description || '') + '</div>';
+    el.innerHTML = '<div><b>' + p.name + '</b> <span style="color:var(--dim);font-size:10px">@' + p.version + '</span></div><div class="desc">' + (p.description || '') + '</div>';
     el.onclick = () => selectPlugin(p.name);
     box.appendChild(el);
   }
@@ -93,11 +156,12 @@ function selectPlugin(name) {
     const div = document.createElement('div');
     div.className = 'field';
     const req = f.required ? '<span class="req">*</span> ' : '';
-    div.innerHTML = '<label>' + req + f.name + ' <span class="hint">' + (f.type) + (f.default !== undefined && f.default !== null ? ' 默认 ' + JSON.stringify(f.default) : '') + '</span></label>';
+    let def = '';
+    if (f.default !== undefined && f.default !== null) def = ' 默认 ' + JSON.stringify(f.default);
+    div.innerHTML = '<label>' + req + f.name + ' <span class="hint">' + f.type + def + '</span></label>';
     const input = document.createElement('input');
     input.name = f.name;
     input.placeholder = f.description || '';
-    if (f.default !== undefined && f.default !== null) input.placeholder += ' (默认 ' + JSON.stringify(f.default) + ')';
     input.dataset.type = f.type;
     div.appendChild(input);
     form.appendChild(div);
@@ -125,31 +189,32 @@ $('submit').onclick = async () => {
   const missing = selectedPlugin.fields.filter((f) => f.required && config[f.name] === undefined);
   if (missing.length) { alert('缺少必填: ' + missing.map((f) => f.name).join(', ')); return; }
   await api('/api/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ plugin: selectedPlugin.name, config }) });
-  pollSoon();
+  refresh();
 };
 
 async function loadRuns() {
   const list = await api('/api/runs');
   const box = $('runs'); box.innerHTML = '';
-  if (!list.length) { box.innerHTML = '<div class="empty">还没有运行</div>'; }
+  if (!list.length) { box.innerHTML = '<div class="empty">还没有运行任务</div>'; }
   for (const r of list) {
     const el = document.createElement('div');
     el.className = 'run' + (selectedRun === r.runId ? ' sel' : '');
-    el.innerHTML = '<div><span class="badge ' + r.status + '">' + r.status + '</span> <b>' + r.plugin + '</b></div>' +
+    el.innerHTML = '<div><span class="badge ' + r.status + '">' + statusText(r.status) + '</span> <b>' + r.plugin + '</b></div>' +
       '<div class="meta">' + new Date(r.startedAt).toLocaleTimeString() + (r.status === 'done' ? ' · ' + r.itemCount + ' 条' : '') + (r.status === 'running' ? ' · ' + r.lines + ' 行日志' : '') + '</div>';
     el.onclick = () => { selectedRun = r.runId; loadRuns(); loadDetail(); };
     box.appendChild(el);
   }
 }
 
-let lastLogTs = '';
+function statusText(s) { return s === 'running' ? '运行中' : s === 'done' ? '完成' : '失败'; }
+
 async function loadDetail() {
   if (!selectedRun) return;
   const rec = await api('/api/runs/' + selectedRun);
-  if (rec.error) { $('detailTitle').textContent = '详情'; return; }
+  if (rec.error) { $('detailTitle').textContent = '运行详情'; return; }
   $('detailTitle').textContent = rec.plugin + ' · ' + rec.runId.slice(0, 40);
   const s = rec.stats;
-  $('runStats').textContent = rec.status === 'running' ? '运行中…' :
+  $('runStats').textContent = rec.status === 'running' ? '任务运行中，日志实时刷新…' :
     (s ? '请求 ' + s.requestsTotal + ' · 失败 ' + s.requestsFailed + ' · 重试 ' + s.retryCount + ' · ' + (s.durationMs / 1000).toFixed(1) + 's · ' + (rec.itemCount ?? 0) + ' 条' : rec.error || '');
   const logs = $('logs');
   logs.innerHTML = rec.lines.map((l) => '<span class="ts">' + new Date(l.ts).toLocaleTimeString() + '</span> <span class="' + l.level + '">' + escapeHtml(l.message) + '</span>').join('\n') || '…';
@@ -160,7 +225,7 @@ async function loadDetail() {
 async function loadResults() {
   const data = await api('/api/results/' + selectedRun);
   if (data.error) { $('results').innerHTML = '<div class="empty">' + data.error + '</div>'; return; }
-  if (!data.items.length) { $('results').innerHTML = '<div class="empty">0 条</div>'; return; }
+  if (!data.items.length) { $('results').innerHTML = '<div class="empty">0 条结果</div>'; return; }
   const cols = [...new Set(data.items.flatMap((i) => Object.keys(i)))].slice(0, 8);
   let html = '<table><thead><tr>' + cols.map((c) => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
   for (const item of data.items) {
@@ -173,9 +238,9 @@ async function loadResults() {
 
 function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-function pollSoon() { loadRuns(); if (selectedRun) loadDetail(); }
+function refresh() { loadRuns(); if (selectedRun) loadDetail(); }
 loadPlugins().then(loadRuns);
-pollTimer = setInterval(pollSoon, 2000);
+setInterval(refresh, 2000);
 </script>
 </body>
 </html>
